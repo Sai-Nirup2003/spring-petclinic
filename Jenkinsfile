@@ -5,6 +5,7 @@ pipeline {
         AWS_REGION = 'ap-south-1' 
         ECR_REPO = '917186637165.dkr.ecr.ap-south-1.amazonaws.com/capstone/petclinic'
         IMAGE_TAG = "${BUILD_NUMBER}"
+        DOCKER_IMAGE = "${ECR_REPO}"  
     }
 
     tools {
@@ -21,9 +22,8 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                echo "🐳 Building Docker image..."
-                sh 'docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} -f Dockerfile .'
-
+                echo "🐳 Building Docker image ${DOCKER_IMAGE}:${IMAGE_TAG}..."
+                sh "docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} -f Dockerfile ."
             }
         }
 
@@ -41,7 +41,7 @@ pipeline {
         stage('Push to ECR') {
             steps {
                 echo "📦 Pushing Docker image to ECR..."
-                sh "docker push ${ECR_REPO}:${IMAGE_TAG}"
+                sh "docker push ${DOCKER_IMAGE}:${IMAGE_TAG}"
             }
         }
     }
