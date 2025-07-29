@@ -4,7 +4,7 @@ pipeline {
     environment {
         AWS_REGION = 'ap-south-1' 
         ECR_REPO = '917186637165.dkr.ecr.ap-south-1.amazonaws.com/capstone/petclinic'
-        IMAGE_TAG = "${BUILD_NUMBER}"
+        IMAGE_TAG = "spring-petclinic"
         DOCKER_IMAGE = "${ECR_REPO}"  
     }
 
