@@ -11,7 +11,7 @@ pipeline {
     }
 
     tools {
-        maven 'Maven' 
+        maven 'Maven'
     }
 
     stages {
@@ -33,7 +33,6 @@ pipeline {
             steps {
                 echo "🔐 Logging into AWS ECR..."
                 sh '''
-                    aws --version
                     aws ecr get-login-password --region $AWS_REGION | \
                     docker login --username AWS --password-stdin $ECR_REPO
                 '''
@@ -44,6 +43,18 @@ pipeline {
             steps {
                 echo "📦 Pushing Docker image to ECR..."
                 sh "docker push ${DOCKER_IMAGE}"
+            }
+        }
+
+        stage('Verify Image in ECR') {
+            steps {
+                echo "🔍 Verifying image ${DOCKER_IMAGE} exists in ECR..."
+                sh """
+                    aws ecr describe-images \
+                        --repository-name capstone/petclinic \
+                        --image-ids imageTag=${IMAGE_TAG} \
+                        --region $AWS_REGION
+                """
             }
         }
 
