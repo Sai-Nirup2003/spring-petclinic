@@ -6,6 +6,7 @@ pipeline {
         ECR_REPO = '917186637165.dkr.ecr.ap-south-1.amazonaws.com/capstone/petclinic'
         IMAGE_TAG = "spring-petclinic-${BUILD_NUMBER}"
         DOCKER_IMAGE = "${ECR_REPO}:${IMAGE_TAG}"
+        LATEST_IMAGE = "${ECR_REPO}:latest"
         ECS_CLUSTER = 'spring-petclinic-cluster'
         ECS_SERVICE = 'spring-petclinic-service'
     }
@@ -24,8 +25,11 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                echo "🐳 Building Docker image ${DOCKER_IMAGE}..."
-                sh "docker build -t ${DOCKER_IMAGE} -f Dockerfile ."
+                echo "🐳 Building Docker image with tag: ${IMAGE_TAG}..."
+                sh """
+                    docker build -t ${DOCKER_IMAGE} -f Dockerfile .
+                    docker tag ${DOCKER_IMAGE} ${LATEST_IMAGE}
+                """
             }
         }
 
@@ -41,18 +45,26 @@ pipeline {
 
         stage('Push to ECR') {
             steps {
-                echo "📦 Pushing Docker image to ECR..."
-                sh "docker push ${DOCKER_IMAGE}"
+                echo "📦 Pushing Docker images to ECR..."
+                sh """
+                    docker push ${DOCKER_IMAGE}
+                    docker push ${LATEST_IMAGE}
+                """
             }
         }
 
-        stage('Verify Image in ECR') {
+        stage('Verify Images in ECR') {
             steps {
-                echo "🔍 Verifying image ${DOCKER_IMAGE} exists in ECR..."
+                echo "🔍 Verifying both image tags in ECR..."
                 sh """
                     aws ecr describe-images \
                         --repository-name capstone/petclinic \
                         --image-ids imageTag=${IMAGE_TAG} \
+                        --region $AWS_REGION
+
+                    aws ecr describe-images \
+                        --repository-name capstone/petclinic \
+                        --image-ids imageTag=latest \
                         --region $AWS_REGION
                 """
             }
@@ -60,7 +72,7 @@ pipeline {
 
         stage('Deploy to ECS') {
             steps {
-                echo "🚀 Triggering ECS deployment of image ${DOCKER_IMAGE}..."
+                echo "🚀 Triggering ECS deployment of image ${LATEST_IMAGE}..."
                 sh '''
                     aws ecs update-service \
                         --cluster $ECS_CLUSTER \
